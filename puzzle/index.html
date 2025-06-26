@@ -394,25 +394,20 @@ function addPieceEvents() {
       pieceStates[dragIdx].x = offsetX + dx;
       pieceStates[dragIdx].y = offsetY + dy;
       keepPieceInBounds(dragIdx);
+      // 拖动时实时吸附
+      snapPieceToOtherEdges(dragIdx);
       dragMoved = true;
       renderPuzzle();
     }
   }
   function onMouseUp(e) {
     if (dragIdx !== null) {
-      // 磁吸吸附逻辑
-      if (dragMoved) {
-        const movedDist = Math.hypot(pieceStates[dragIdx].x - dragStartX, pieceStates[dragIdx].y - dragStartY);
-        if (movedDist < 10) {
-          snapPieceToOtherEdges(dragIdx);
-        }
-      }
       dragging = false;
       dragMoved = false;
       document.body.style.cursor = '';
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
-      setTimeout(() => { dragIdx = null; }, 0); // 延迟清零，保证click/dblclick能正常触发
+      dragIdx = null;
       checkSuccess();
     }
   }
@@ -501,7 +496,7 @@ function checkSuccess() {
       if (!inAny) allIn = false;
     }
   }
-  // 检查拼块之间无重叠（顶点距离大于1px）
+  // 检查拼块之间无重叠（允许顶点重合，只有顶点非常接近但不完全重合才算重叠）
   let noOverlap = true;
   for (let i = 0; i < pieces.length; i++) {
     const vertsA = getTransformedPieceVertices(i, pieceStates[i].x, pieceStates[i].y, pieceStates[i].angle);
@@ -509,7 +504,8 @@ function checkSuccess() {
       const vertsB = getTransformedPieceVertices(j, pieceStates[j].x, pieceStates[j].y, pieceStates[j].angle);
       for (const a of vertsA) {
         for (const b of vertsB) {
-          if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 1) noOverlap = false;
+          const dist = Math.hypot(a[0] - b[0], a[1] - b[1]);
+          if (dist < 1 && dist > 0.01) noOverlap = false;
         }
       }
     }
@@ -641,10 +637,10 @@ window.addEventListener('resize', () => {
 
 // 磁吸吸附：边对边吸附+顶点对齐
 function snapPieceToOtherEdges(idx) {
-  const SNAP_DIST = 3;
+  const SNAP_DIST = 15;
+  const MAX_SNAP_SHIFT = 20; // 最大允许吸附平移距离
   const vertsA = getTransformedPieceVertices(idx, pieceStates[idx].x, pieceStates[idx].y, pieceStates[idx].angle);
   let best = null;
-  // 边对边吸附
   for (let j = 0; j < pieces.length; j++) {
     if (j === idx) continue;
     const vertsB = getTransformedPieceVertices(j, pieceStates[j].x, pieceStates[j].y, pieceStates[j].angle);
@@ -666,34 +662,25 @@ function snapPieceToOtherEdges(idx) {
         if (Math.abs(Math.abs(dot) - 1) > 0.01) continue; // 方向夹角小于约3度
         // 计算距离
         const dist = pointToLineDist(ax1, ay1, bx1, by1, bx2, by2);
-        if (dist < SNAP_DIST) {
-          // 记录最佳吸附
+        // 只吸附A边第一个点到B边第一个点
+        const shift = Math.hypot(bx1 - ax1, by1 - ay1);
+        if (dist < SNAP_DIST && shift < MAX_SNAP_SHIFT) {
           if (!best || dist < best.dist) {
-            best = {a1, a2, b1, b2, j, dist, ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, va, vb, lenA, lenB, dot};
+            best = {a1, a2, b1, b2, j, dist, ax1, ay1, bx1, by1, shift};
           }
         }
       }
     }
   }
   if (best) {
-    // 计算平移量，使两边重合
-    // 以A边整体平移到B边
-    const {ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, lenA, lenB, dot} = best;
-    // 先将A边第一个点平移到B边第一个点
-    let dx = bx1 - ax1;
-    let dy = by1 - ay1;
-    // 再调整方向
-    if (dot < 0) {
-      // 反向，A边第二点对齐B边第二点
-      dx = bx2 - ax2;
-      dy = by2 - ay2;
-    }
+    // 只做最小平移，不做反向吸附
+    const {ax1, ay1, bx1, by1} = best;
+    const dx = bx1 - ax1;
+    const dy = by1 - ay1;
     pieceStates[idx].x += dx;
     pieceStates[idx].y += dy;
     keepPieceInBounds(idx);
-    // 吸附后再顶点对齐
     snapPieceVertexToOther(idx);
-    renderPuzzle();
   }
 }
 // 计算点到线段距离
@@ -716,7 +703,7 @@ function pointToLineDist(px, py, x1, y1, x2, y2) {
 }
 // 顶点对齐
 function snapPieceVertexToOther(idx) {
-  const SNAP_DIST = 3;
+  const SNAP_DIST = 15; // 吸附距离增大到15
   const vertsA = getTransformedPieceVertices(idx, pieceStates[idx].x, pieceStates[idx].y, pieceStates[idx].angle);
   for (let j = 0; j < pieces.length; j++) {
     if (j === idx) continue;
