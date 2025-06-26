@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=800, initial-scale=1.0">
+  <title>T字拼板拼图游戏</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+      background: #f5f3ea;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 100vw;
+      min-width: 0;
+      max-width: 100vw;
+      margin: 0;
+      padding: 20px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .target-list {
+      display: flex;
+      gap: 32px;
+      justify-content: center;
+      margin-top: 30px;
+    }
+    .target-col {
+      flex: 1;
+      min-width: 200px;
+    }
+    .target-col h2 {
+      text-align: center;
+      font-size: 1.1em;
+      margin-bottom: 10px;
+    }
+    .target-shape {
+      border: 2px solid #bfa76f;
+      border-radius: 8px;
+      background: #fffbe6;
+      margin: 10px auto;
+      width: 180px;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: box-shadow 0.2s;
+    }
+    .target-shape:hover {
+      box-shadow: 0 0 8px #bfa76f;
+    }
+    .game-area {
+      display: flex;
+      gap: 24px;
+      margin-top: 30px;
+      min-height: 320px;
+      justify-content: center;
+      width: 100vw;
+      max-width: 100vw;
+    }
+    .info-panel {
+      width: 220px;
+      background: #f8f4e6;
+      border-radius: 10px;
+      padding: 18px 12px;
+      box-shadow: 0 2px 8px #e2d6b1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .info-panel h3 {
+      margin: 0 0 10px 0;
+      font-size: 1.1em;
+    }
+    .info-panel .timer {
+      font-size: 1.5em;
+      color: #bfa76f;
+      margin: 10px 0 20px 0;
+    }
+    .info-panel .target-svg {
+      width: 180px;
+      height: 120px;
+      margin-bottom: 10px;
+      background: #fffbe6;
+      border-radius: 6px;
+      border: 1px solid #e2d6b1;
+    }
+    .exit-btn {
+      background: #e57373;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top: 18px;
+      transition: background 0.2s;
+    }
+    .exit-btn:hover {
+      background: #c62828;
+    }
+    .puzzle-panel {
+      background: #e9e2d0;
+      border-radius: 12px;
+      position: relative;
+      width: 100%;
+      max-width: 1600px;
+      min-width: 0;
+      height: 100vh;
+      min-height: 400px;
+      overflow-x: auto;
+      overflow-y: auto;
+      box-shadow: 0 2px 8px #e2d6b1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .puzzle-svg {
+      width: 1600px;
+      height: 100vh;
+      display: block;
+      background: repeating-linear-gradient(45deg, #e0cfa2 0 10px, #d2b47c 10px 20px);
+      margin: 0 auto;
+    }
+    .btn {
+      background: #bfa76f;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1em;
+      cursor: pointer;
+      margin-top: 18px;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #a88d4a;
+    }
+    .success-modal {
+      position: fixed;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+    .success-modal.active {
+      display: flex;
+    }
+    .success-box {
+      background: #fffbe6;
+      border-radius: 12px;
+      padding: 32px 40px;
+      box-shadow: 0 4px 24px #bfa76f;
+      text-align: center;
+    }
+    .success-box h2 {
+      color: #bfa76f;
+      margin-bottom: 10px;
+    }
+    .success-box .btn {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>T字拼板拼图游戏</h1>
+    <div id="targetList" class="target-list"></div>
+    <div id="gameArea" class="game-area" style="display:none;">
+      <div class="info-panel">
+        <h3>目标形状</h3>
+        <svg class="target-svg" id="targetShapeSvg"></svg>
+        <div>当前耗时</div>
+        <div class="timer" id="timer">0 秒</div>
+        <button class="exit-btn" id="exitBtn">退出拼图</button>
+      </div>
+      <div class="puzzle-panel">
+        <svg class="puzzle-svg" id="puzzleSvg" width="1600" height="280"></svg>
+      </div>
+    </div>
+  </div>
+  <div class="success-modal" id="successModal">
+    <div class="success-box">
+      <h2>拼图成功！</h2>
+      <div id="successTime"></div>
+      <button class="btn" id="backBtn">返回目标选择</button>
+    </div>
+  </div>
+  <audio id="moveSound" src="./assets/audio/flip.mp3"></audio>
+  <audio id="rotateSound" src="./assets/audio/rotate.mp3"></audio>
+  <audio id="successSound" src="./assets/audio/success.mp3"></audio>
+  <script>
+// 拼板数据
+const pieces = [
+  { name: "p1", vertices: [[0,0],[0,280],[280,0]] },
+  { name: "p2", vertices: [[0,0],[116,0],[396,280],[0,280]] },
+  { name: "p3", vertices: [[0,0],[280,280],[684,280],[602,198],[800,0]] },
+  { name: "p4", vertices: [[0,0],[800,0],[520,280],[0,280]] }
+];
+const pieceColors = [
+  'url(#wood1)',
+  'url(#wood2)',
+  'url(#wood3)',
+  'url(#wood4)'
+];
+// 目标图形定义（可根据targets.png补充更多，按难度分组）
+const targets = [
+  {
+    name: 'T字',
+    difficulty: '简单',
+    polygons: [
+      [[0,0],[1600,0],[1600,280],[0,280]]
+    ]
+  },
+  {
+    name: '大L',
+    difficulty: '中等',
+    polygons: [
+      [[0,0],[520,0],[520,280],[0,280]],
+      [[520,0],[800,0],[800,80],[520,80]]
+    ]
+  },
+  {
+    name: '大三角',
+    difficulty: '困难',
+    polygons: [
+      [[0,280],[400,0],[800,280]]
+    ]
+  }
+  // 可继续补充更多目标图形
+];
+const difficultyLevels = ['简单','中等','困难'];
+
+// 生成目标图形列表
+function renderTargetList() {
+  const list = document.getElementById('targetList');
+  list.innerHTML = '';
+  for (const level of difficultyLevels) {
+    const col = document.createElement('div');
+    col.className = 'target-col';
+    const h2 = document.createElement('h2');
+    h2.textContent = level;
+    col.appendChild(h2);
+    for (const t of targets.filter(t=>t.difficulty===level)) {
+      const div = document.createElement('div');
+      div.className = 'target-shape';
+      div.title = t.name;
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','160');
+      svg.setAttribute('height','100');
+      svg.style.display = 'block';
+      for (const poly of t.polygons) {
+        const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+        p.setAttribute('points', poly.map(pt=>pt[0]/5+","+pt[1]/2.8).join(' '));
+        p.setAttribute('fill','#e0cfa2');
+        p.setAttribute('stroke','#bfa76f');
+        p.setAttribute('stroke-width','2');
+        svg.appendChild(p);
+      }
+      div.appendChild(svg);
+      div.onclick = ()=>startGame(t);
+      col.appendChild(div);
+    }
+    list.appendChild(col);
+  }
+}
+
+// 游戏状态
+let currentTarget = null;
+let timer = 0;
+let timerInterval = null;
+let pieceStates = [];
+
+function startGame(target) {
+  currentTarget = target;
+  timer = 0;
+  pieceStates = getInitialPieceStates();
+  document.getElementById('targetList').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'flex';
+  renderTargetShape();
+  renderPuzzle();
+  document.getElementById('timer').textContent = '0 秒';
+  timerInterval = setInterval(()=>{
+    timer++;
+    document.getElementById('timer').textContent = timer+' 秒';
+  },1000);
+}
+
+function getInitialPieceStates() {
+  // 初始位置分散，避免重叠，且全部在1600x280画布内
+  return [
+    {x:40, y:40, angle:0, flipX: false},
+    {x:440, y:40, angle:0, flipX: false},
+    {x:840, y:40, angle:0, flipX: false},
+    {x:1240, y:40, angle:0, flipX: false}
+  ];
+}
+
+function renderTargetShape() {
+  const svg = document.getElementById('targetShapeSvg');
+  svg.innerHTML = '';
+  for (const poly of currentTarget.polygons) {
+    const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    p.setAttribute('points', poly.map(pt=>pt[0]/5+","+pt[1]/2.8).join(' '));
+    p.setAttribute('fill','#e0cfa2');
+    p.setAttribute('stroke','#bfa76f');
+    p.setAttribute('stroke-width','2');
+    svg.appendChild(p);
+  }
+}
+
+function getPuzzleHeight() {
+  return Math.max(window.innerHeight, 400);
+}
+
+function renderPuzzle() {
+  const svg = document.getElementById('puzzleSvg');
+  const puzzleHeight = getPuzzleHeight();
+  svg.setAttribute('height', puzzleHeight);
+  svg.innerHTML = `
+    <defs>
+      <pattern id="wood1" patternUnits="userSpaceOnUse" width="40" height="40">
+        <rect width="40" height="40" fill="#e0cfa2"/>
+        <path d="M0,20 Q20,30 40,20" stroke="#bfa76f" stroke-width="2" fill="none"/>
+      </pattern>
+      <pattern id="wood2" patternUnits="userSpaceOnUse" width="40" height="40">
+        <rect width="40" height="40" fill="#d2b47c"/>
+        <path d="M0,10 Q20,0 40,10" stroke="#bfa76f" stroke-width="2" fill="none"/>
+      </pattern>
+      <pattern id="wood3" patternUnits="userSpaceOnUse" width="40" height="40">
+        <rect width="40" height="40" fill="#e0cfa2"/>
+        <path d="M0,30 Q20,40 40,30" stroke="#bfa76f" stroke-width="2" fill="none"/>
+      </pattern>
+      <pattern id="wood4" patternUnits="userSpaceOnUse" width="40" height="40">
+        <rect width="40" height="40" fill="#d2b47c"/>
+        <path d="M0,20 Q20,10 40,20" stroke="#bfa76f" stroke-width="2" fill="none"/>
+      </pattern>
+    </defs>
+    <!-- 目标区域外轮廓 -->
+    ${currentTarget && currentTarget.polygons.map(poly =>
+      `<polygon points="${poly.map(pt=>pt.join(',')).join(' ')}" fill="none" stroke="#e57373" stroke-width="4" stroke-dasharray="12 8" />`
+    ).join('')}
+  `;
+  pieces.forEach((piece, i) => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('data-idx',i);
+    g.setAttribute('style','cursor:pointer;');
+    let cx = 0, cy = 0;
+    for (const pt of piece.vertices) { cx += pt[0]; cy += pt[1]; }
+    cx /= piece.vertices.length;
+    cy /= piece.vertices.length;
+    let transform = `translate(${pieceStates[i].x},${pieceStates[i].y}) rotate(${pieceStates[i].angle},${cx},${cy})`;
+    if (pieceStates[i].flipX) {
+      // 镜像，需以中心点缩放-1
+      transform += ` scale(-1,1) translate(${-2*cx},0)`;
+    }
+    g.setAttribute('transform', transform);
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points', piece.vertices.map(pt=>pt.join(',')).join(' '));
+    poly.setAttribute('fill', pieceColors[i]);
+    poly.setAttribute('stroke', '#8b6f3a');
+    poly.setAttribute('stroke-width', '3');
+    g.appendChild(poly);
+    svg.appendChild(g);
+  });
+  addPieceEvents();
+}
+
+function addPieceEvents() {
+  const svg = document.getElementById('puzzleSvg');
+  let dragIdx = null, offsetX = 0, offsetY = 0, startX = 0, startY = 0;
+  let dragging = false;
+  let dragMoved = false;
+  let dragStartX = 0, dragStartY = 0;
+  function onMouseMove(e) {
+    if (dragIdx !== null && dragging) {
+      // 画布左上角相对屏幕的偏移
+      const rect = svg.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const dx = mouseX - startX;
+      const dy = mouseY - startY;
+      pieceStates[dragIdx].x = offsetX + dx;
+      pieceStates[dragIdx].y = offsetY + dy;
+      keepPieceInBounds(dragIdx);
+      dragMoved = true;
+      renderPuzzle();
+    }
+  }
+  function onMouseUp(e) {
+    if (dragIdx !== null) {
+      // 磁吸吸附逻辑
+      if (dragMoved) {
+        const movedDist = Math.hypot(pieceStates[dragIdx].x - dragStartX, pieceStates[dragIdx].y - dragStartY);
+        if (movedDist < 10) {
+          snapPieceToOtherEdges(dragIdx);
+        }
+      }
+      dragging = false;
+      dragMoved = false;
+      document.body.style.cursor = '';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      setTimeout(() => { dragIdx = null; }, 0); // 延迟清零，保证click/dblclick能正常触发
+      checkSuccess();
+    }
+  }
+  svg.querySelectorAll('g').forEach(g => {
+    g.onmousedown = function(e) {
+      dragIdx = +g.getAttribute('data-idx');
+      // 画布左上角相对屏幕的偏移
+      const rect = svg.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      offsetX = pieceStates[dragIdx].x;
+      offsetY = pieceStates[dragIdx].y;
+      dragging = true;
+      dragMoved = false;
+      dragStartX = pieceStates[dragIdx].x;
+      dragStartY = pieceStates[dragIdx].y;
+      document.body.style.cursor = 'grabbing';
+      playSound('move');
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+      e.preventDefault();
+    };
+    let clickTimer = null;
+    g.onclick = function(e) {
+      if (e.detail === 1 && !dragging && dragIdx === null) {
+        if (clickTimer) clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          // 单击旋转，旋转后保证拼块中心仍在画布内
+          const idx = +g.getAttribute('data-idx');
+          // 旋转前中心
+          const centerBefore = getPieceCenter(idx);
+          pieceStates[idx].angle = (pieceStates[idx].angle + 45) % 360;
+          // 旋转后中心
+          const centerAfter = getPieceCenter(idx);
+          // 计算偏移量
+          let dx = centerBefore[0] - centerAfter[0];
+          let dy = centerBefore[1] - centerAfter[1];
+          pieceStates[idx].x += dx;
+          pieceStates[idx].y += dy;
+          keepPieceInBounds(idx);
+          playSound('rotate');
+          renderPuzzle();
+          checkSuccess();
+        }, 250); // 250ms内无双击才判定为单击
+      }
+    };
+    g.ondblclick = function(e) {
+      // 双击左右镜像翻转
+      if (!dragging && dragIdx === null) {
+        const idx = +g.getAttribute('data-idx');
+        if (clickTimer) clearTimeout(clickTimer);
+        pieceStates[idx].flipX = !pieceStates[idx].flipX;
+        keepPieceInBounds(idx);
+        playSound('rotate');
+        renderPuzzle();
+        checkSuccess();
+        e.preventDefault();
+      }
+    };
+  });
+}
+
+function playSound(type) {
+  let audio;
+  if (type === 'move') audio = document.getElementById('moveSound');
+  if (type === 'rotate') audio = document.getElementById('rotateSound');
+  if (type === 'success') audio = document.getElementById('successSound');
+  if (audio) {
+    try {
+      audio.currentTime = 0;
+      audio.play().catch(()=>{});
+    } catch (e) {}
+  }
+}
+
+function checkSuccess() {
+  // 判定：所有拼块的所有顶点都在目标区域内，且拼块之间无重叠
+  let allIn = true;
+  for (let i = 0; i < pieces.length; i++) {
+    const verts = getTransformedPieceVertices(i, pieceStates[i].x, pieceStates[i].y, pieceStates[i].angle);
+    for (const pt of verts) {
+      let inAny = false;
+      for (const poly of currentTarget.polygons) {
+        if (pointInPolygon(pt, poly)) inAny = true;
+      }
+      if (!inAny) allIn = false;
+    }
+  }
+  // 检查拼块之间无重叠（顶点距离大于1px）
+  let noOverlap = true;
+  for (let i = 0; i < pieces.length; i++) {
+    const vertsA = getTransformedPieceVertices(i, pieceStates[i].x, pieceStates[i].y, pieceStates[i].angle);
+    for (let j = i + 1; j < pieces.length; j++) {
+      const vertsB = getTransformedPieceVertices(j, pieceStates[j].x, pieceStates[j].y, pieceStates[j].angle);
+      for (const a of vertsA) {
+        for (const b of vertsB) {
+          if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 1) noOverlap = false;
+        }
+      }
+    }
+  }
+  if (allIn && noOverlap) {
+    setTimeout(()=>{
+      playSound('success');
+      showSuccess();
+    }, 300);
+  }
+}
+
+function getPieceCenter(idx) {
+  // 取多边形顶点平均值
+  const piece = pieces[idx];
+  const state = pieceStates[idx];
+  let cx = 0, cy = 0;
+  for (const pt of piece.vertices) {
+    cx += pt[0];
+    cy += pt[1];
+  }
+  cx /= piece.vertices.length;
+  cy /= piece.vertices.length;
+  // 旋转后中心点
+  const center = rotatePoint(state.angle);
+  return [center[0] + state.x, center[1] + state.y];
+}
+
+function rotatePoint(angle) {
+  // 以(0,0)为中心旋转
+  const rad = angle*Math.PI/180;
+  return [
+    Math.cos(rad),
+    Math.sin(rad)
+  ];
+}
+
+function rotatePointAboutCenter(pt, center, angle) {
+  // 以center为中心旋转
+  const rad = angle * Math.PI / 180;
+  const x = pt[0] - center[0];
+  const y = pt[1] - center[1];
+  return [
+    center[0] + x * Math.cos(rad) - y * Math.sin(rad),
+    center[1] + x * Math.sin(rad) + y * Math.cos(rad)
+  ];
+}
+
+function pointInPolygon(point, vs) {
+  // 射线法
+  var x = point[0], y = point[1];
+  var inside = false;
+  for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    var xi = vs[i][0], yi = vs[i][1];
+    var xj = vs[j][0], yj = vs[j][1];
+    var intersect = ((yi > y) != (yj > y)) &&
+      (x < (xj - xi) * (y - yi) / (yj - yi + 0.00001) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function showSuccess() {
+  clearInterval(timerInterval);
+  document.getElementById('successTime').textContent = `用时：${timer} 秒`;
+  document.getElementById('successModal').classList.add('active');
+}
+
+document.getElementById('backBtn').onclick = function() {
+  document.getElementById('successModal').classList.remove('active');
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('targetList').style.display = 'flex';
+  clearInterval(timerInterval);
+};
+
+document.getElementById('exitBtn').onclick = function() {
+  document.getElementById('gameArea').style.display = 'none';
+  document.getElementById('targetList').style.display = 'flex';
+  clearInterval(timerInterval);
+};
+
+function getTransformedPieceVertices(idx, x, y, angle) {
+  // 返回拼块旋转、平移、镜像后的所有顶点
+  const piece = pieces[idx];
+  let cx = 0, cy = 0;
+  for (const pt of piece.vertices) { cx += pt[0]; cy += pt[1]; }
+  cx /= piece.vertices.length;
+  cy /= piece.vertices.length;
+  return piece.vertices.map(pt => {
+    // 先以中心旋转，再镜像，再平移
+    const rad = angle * Math.PI / 180;
+    let dx = pt[0] - cx;
+    let dy = pt[1] - cy;
+    let rx = cx + dx * Math.cos(rad) - dy * Math.sin(rad);
+    let ry = cy + dx * Math.sin(rad) + dy * Math.cos(rad);
+    // 镜像
+    if (pieceStates[idx].flipX) {
+      rx = 2 * cx - rx;
+    }
+    return [rx + x, ry + y];
+  });
+}
+
+function keepPieceInBounds(idx) {
+  // 保证拼块所有顶点都在画布内
+  const svgW = 1600, svgH = getPuzzleHeight();
+  let state = pieceStates[idx];
+  let verts = getTransformedPieceVertices(idx, state.x, state.y, state.angle);
+  let minX = Math.min(...verts.map(v=>v[0]));
+  let minY = Math.min(...verts.map(v=>v[1]));
+  let maxX = Math.max(...verts.map(v=>v[0]));
+  let maxY = Math.max(...verts.map(v=>v[1]));
+  // 先贴右/下，再贴左/上
+  if (maxX > svgW) state.x -= (maxX - svgW);
+  if (maxY > svgH) state.y -= (maxY - svgH);
+  verts = getTransformedPieceVertices(idx, state.x, state.y, state.angle);
+  minX = Math.min(...verts.map(v=>v[0]));
+  minY = Math.min(...verts.map(v=>v[1]));
+  if (minX < 0) state.x -= minX;
+  if (minY < 0) state.y -= minY;
+}
+
+window.addEventListener('resize', () => {
+  // 自适应高度
+  const svg = document.getElementById('puzzleSvg');
+  if(svg) svg.setAttribute('height', getPuzzleHeight());
+  renderPuzzle();
+});
+
+// 磁吸吸附：边对边吸附+顶点对齐
+function snapPieceToOtherEdges(idx) {
+  const SNAP_DIST = 3;
+  const vertsA = getTransformedPieceVertices(idx, pieceStates[idx].x, pieceStates[idx].y, pieceStates[idx].angle);
+  let best = null;
+  // 边对边吸附
+  for (let j = 0; j < pieces.length; j++) {
+    if (j === idx) continue;
+    const vertsB = getTransformedPieceVertices(j, pieceStates[j].x, pieceStates[j].y, pieceStates[j].angle);
+    for (let a1 = 0; a1 < vertsA.length; a1++) {
+      let a2 = (a1 + 1) % vertsA.length;
+      const ax1 = vertsA[a1][0], ay1 = vertsA[a1][1];
+      const ax2 = vertsA[a2][0], ay2 = vertsA[a2][1];
+      for (let b1 = 0; b1 < vertsB.length; b1++) {
+        let b2 = (b1 + 1) % vertsB.length;
+        const bx1 = vertsB[b1][0], by1 = vertsB[b1][1];
+        const bx2 = vertsB[b2][0], by2 = vertsB[b2][1];
+        // 判断两边是否平行
+        const va = [ax2 - ax1, ay2 - ay1];
+        const vb = [bx2 - bx1, by2 - by1];
+        const lenA = Math.hypot(va[0], va[1]);
+        const lenB = Math.hypot(vb[0], vb[1]);
+        if (lenA < 1 || lenB < 1) continue;
+        const dot = (va[0] * vb[0] + va[1] * vb[1]) / (lenA * lenB);
+        if (Math.abs(Math.abs(dot) - 1) > 0.01) continue; // 方向夹角小于约3度
+        // 计算距离
+        const dist = pointToLineDist(ax1, ay1, bx1, by1, bx2, by2);
+        if (dist < SNAP_DIST) {
+          // 记录最佳吸附
+          if (!best || dist < best.dist) {
+            best = {a1, a2, b1, b2, j, dist, ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, va, vb, lenA, lenB, dot};
+          }
+        }
+      }
+    }
+  }
+  if (best) {
+    // 计算平移量，使两边重合
+    // 以A边整体平移到B边
+    const {ax1, ay1, ax2, ay2, bx1, by1, bx2, by2, lenA, lenB, dot} = best;
+    // 先将A边第一个点平移到B边第一个点
+    let dx = bx1 - ax1;
+    let dy = by1 - ay1;
+    // 再调整方向
+    if (dot < 0) {
+      // 反向，A边第二点对齐B边第二点
+      dx = bx2 - ax2;
+      dy = by2 - ay2;
+    }
+    pieceStates[idx].x += dx;
+    pieceStates[idx].y += dy;
+    keepPieceInBounds(idx);
+    // 吸附后再顶点对齐
+    snapPieceVertexToOther(idx);
+    renderPuzzle();
+  }
+}
+// 计算点到线段距离
+function pointToLineDist(px, py, x1, y1, x2, y2) {
+  const A = px - x1;
+  const B = py - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+  const dot = A * C + B * D;
+  const len_sq = C * C + D * D;
+  let param = -1;
+  if (len_sq !== 0) param = dot / len_sq;
+  let xx, yy;
+  if (param < 0) { xx = x1; yy = y1; }
+  else if (param > 1) { xx = x2; yy = y2; }
+  else { xx = x1 + param * C; yy = y1 + param * D; }
+  const dx = px - xx;
+  const dy = py - yy;
+  return Math.hypot(dx, dy);
+}
+// 顶点对齐
+function snapPieceVertexToOther(idx) {
+  const SNAP_DIST = 3;
+  const vertsA = getTransformedPieceVertices(idx, pieceStates[idx].x, pieceStates[idx].y, pieceStates[idx].angle);
+  for (let j = 0; j < pieces.length; j++) {
+    if (j === idx) continue;
+    const vertsB = getTransformedPieceVertices(j, pieceStates[j].x, pieceStates[j].y, pieceStates[j].angle);
+    for (let a = 0; a < vertsA.length; a++) {
+      for (let b = 0; b < vertsB.length; b++) {
+        const dx = vertsB[b][0] - vertsA[a][0];
+        const dy = vertsB[b][1] - vertsA[a][1];
+        const dist = Math.hypot(dx, dy);
+        if (dist < SNAP_DIST) {
+          pieceStates[idx].x += dx;
+          pieceStates[idx].y += dy;
+          keepPieceInBounds(idx);
+          return;
+        }
+      }
+    }
+  }
+}
+
+renderTargetList();
+  </script>
+</body>
+</html> 
